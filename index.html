@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Versus: Umano contro IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070417;--p1:#00e5ff;--p2:#ff2bd6;--ko:#ffe600;--ink:#f4f0ff;--dim:#8f86b8;--line:#2a1f5c;
+box-sizing:border-box}
+*,*::before,*::after{box-sizing:inherit}
+html{color-scheme:dark; height:100%}
+
+body{
+  margin:0; 
+  min-height:100vh; 
+  background:#020106; 
+  color:var(--ink); 
+  font-family:"Press Start 2P","Courier New",monospace; 
+  line-height:1.5; 
+  display:flex; 
+  justify-content:center; 
+  align-items:center; 
+  padding:12px;
+  overflow:hidden; /* Blocco dello scorrimento durante il gioco */
+  background-image: 
+    radial-gradient(circle at center, rgba(15, 10, 40, 0.5) 0%, rgba(2, 1, 6, 0.98) 100%),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.35) 0 2px, transparent 2px 4px);
+}
+
+/* Sblocco scorrimento alla fine */
+body.ended {
+  overflow-y: auto;
+  align-items: flex-start;
+}
+
+/* Contenitore principale dell'infografica con bordino di chiusura */
+main{
+  width:100%; 
+  max-width:520px; 
+  margin:auto; 
+  padding:16px; 
+  background:var(--bg); 
+  border:3px solid var(--line); /* Bordino di perimetro dell'infografica */
+  box-shadow: 0 0 40px rgba(0,0,0,0.9), inset 0 0 20px rgba(0,0,0,0.6);
+}
+
+/* Rettangoli P1 e P2: larghezza bloccata identica a quella del riquadro di combattimento */
+.vs{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;margin:0 0 12px; width:100%}
+.vs>div{display:flex;flex-direction:column;justify-content:center}
+.vs>.vsx{align-items:center}
+.pl{font-size:9px;padding:8px 10px;border:3px solid;line-height:1.4; transition: all 0.3s ease}
+.pl small{display:block;font-size:7px;color:var(--dim);margin-top:4px}
+.pl.a{color:var(--p1);border-color:var(--p1);box-shadow:3px 3px 0 var(--p1)}
+.pl.b{color:var(--p2);border-color:var(--p2);box-shadow:-3px 3px 0 var(--p2);text-align:right}
+
+/* Effetto Neon alla vittoria */
+.win-h .pl.a { animation: neonGlowCyan 0.6s ease-in-out infinite alternate !important; }
+.win-r .pl.b { animation: neonGlowPink 0.6s ease-in-out infinite alternate !important; }
+@keyframes neonGlowCyan {
+  from { border-color: var(--p1); box-shadow: 3px 3px 0 var(--p1), 0 0 10px rgba(0, 229, 255, 0.6); background: rgba(0, 229, 255, 0.05); }
+  to { border-color: var(--p1); box-shadow: 3px 3px 0 var(--p1), 0 0 20px rgba(0, 229, 255, 1); background: rgba(0, 229, 255, 0.15); }
+}
+@keyframes neonGlowPink {
+  from { border-color: var(--p2); box-shadow: -3px 3px 0 var(--p2), 0 0 10px rgba(255, 43, 214, 0.6); background: rgba(255, 43, 214, 0.05); }
+  to { border-color: var(--p2); box-shadow: -3px 3px 0 var(--p2), 0 0 20px rgba(255, 43, 214, 1); background: rgba(255, 43, 214, 0.15); }
+}
+
+.vsx{color:var(--ko);font-size:12px}
+.fight{display:block;width:100%;margin:0 0 12px;border:3px solid var(--line); background:#05030f}
+.round{margin:0 0 12px;padding:14px;border:3px solid var(--line);background:rgba(255,255,255,.02)}
+
+/* TITOLI GIALLI: Ombre ravvicinate per leggibilità CRT */
+.round h2{margin:0 0 4px;font-size:11px;line-height:1.3;color:var(--ko);text-shadow:1.2px 1.2px 0 var(--p2), -1.2px -1.2px 0 var(--p1)}
+
+.round p.sub{margin:0 0 10px;font-size:7px;color:var(--dim)}
+.bar{display:flex;height:20px;border:2px solid var(--ink);background:#000}
+.bar i{display:block;height:100%;width:0}
+.go .bar i{width:var(--w);animation:fill 1.4s steps(40) both}
+.bar .a{background:var(--p1)}.go .bar .a{box-shadow:2px 0 0 var(--ink);position:relative;z-index:1}.bar .b{background:var(--p2);margin-left:auto}
+@keyframes fill{from{width:0}}
+.nums{display:flex;justify-content:space-between;margin:8px 0;font-size:16px;line-height:1.2}
+.nums .a{color:var(--p1)}.nums .b{color:var(--p2)}
+.txt{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:8px;line-height:1.4}
+.txt .b{text-align:right}.txt b{display:block;margin-bottom:3px}.txt .a b{color:var(--p1)}.txt .b b{color:var(--p2)}
+
+/* SCRITTA K.O. GIALLA */
+.ko{margin:24px 0 12px;text-align:center;color:var(--ko);font-size:14px;line-height:1.5;text-wrap:balance;text-shadow:1.5px 1.5px 0 var(--p2), -1.5px -1.5px 0 var(--p1);animation:blink 1.2s steps(2) infinite}
+
+.src{text-align:center;font-size:7px;color:var(--dim)}
+
+@keyframes blink{50%{opacity:.7}}
+/* sprite */
+.s1{fill:#f1c79b}.s2{fill:#e0ae82}.hr{fill:#2b1a12}.j1{fill:#1b2a6b}.j2{fill:#141f55}.j3{fill:#2b3f9a}
+.w{fill:#fff}.rd{fill:#e0243c}.pn{fill:#12194a}.bk{fill:#0a0a1a}.yl{fill:#ffe600}.mg{fill:#ff2bd6}.gy{fill:#555}
+.m1{fill:#aeb4d8}.m2{fill:#8189b5}.m3{fill:#5f6790}.m4{fill:#2a1f5c}.m5{fill:#3a2f6b}
+.core{fill:#ff2bd6;animation:core .5s steps(1,end) infinite}@keyframes core{50%{fill:#ffe600}}
+.bob{animation:bob 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes bob{50%{transform:translateY(-2px)}}
+
+/* Il pugno (.fist) rimane visibile a riposo, mentre il rettangolo di estensione (.ext) è nascosto a riposo (scaleX 0) */
+.ext,.fist{transform-box:fill-box}
+.ext{transform-origin:0 50%; transform:scaleX(0)}
+
+.fx .hl{animation:hl 2.8s linear,hfl 2.8s steps(1,end)}
+.fx .rl{animation:rl 2.8s linear,rfl 2.8s steps(1,end)}
+.fx .hx{animation:hx 2.8s linear}.fx .hf{animation:hf 2.8s linear}
+.fx .rx{animation:rx 2.8s linear}.fx .rf{animation:rf 2.8s linear}
+
+@keyframes hl{0%,12%{transform:translateX(0);animation-timing-function:ease-out}18%{transform:translateX(-6px);animation-timing-function:cubic-bezier(.5,0,1,.6)}22%,30%{transform:translateX(16px);animation-timing-function:ease-in-out}42%,62%{transform:translateX(0);animation-timing-function:cubic-bezier(.1,.8,.3,1)}65%{transform:translateX(-10px);animation-timing-function:ease-out}82%,100%{transform:translateX(0)}}
+@keyframes rl{0%,22%{transform:translateX(0);animation-timing-function:cubic-bezier(.1,.8,.3,1)}25%{transform:translateX(-10px);animation-timing-function:ease-out}40%,52%{transform:translateX(0);animation-timing-function:ease-out}58%{transform:translateX(-6px);animation-timing-function:cubic-bezier(.5,0,1,.6)}62%,70%{transform:translateX(16px);animation-timing-function:ease-in-out}82%,100%{transform:translateX(0)}}
+
+@keyframes hx{0%,18%{transform:scaleX(0);animation-timing-function:cubic-bezier(.5,0,1,.6)}22%,30%{transform:scaleX(1);animation-timing-function:ease-in-out}40%,100%{transform:scaleX(0)}}
+@keyframes hf{0%,18%{transform:translateX(0);animation-timing-function:cubic-bezier(.5,0,1,.6)}22%,30%{transform:translateX(24px);animation-timing-function:ease-in-out}40%,100%{transform:translateX(0)}}
+
+@keyframes rx{0%,58%{transform:scaleX(0);animation-timing-function:cubic-bezier(.5,0,1,.6)}62%,70%{transform:scaleX(1);animation-timing-function:ease-in-out}80%,100%{transform:scaleX(0)}}
+@keyframes rf{0%,58%{transform:translateX(0);animation-timing-function:cubic-bezier(.5,0,1,.6)}62%,70%{transform:translateX(24px);animation-timing-function:ease-in-out}80%,100%{transform:translateX(0)}}
+
+@keyframes rfl{0%{filter:none}22%{filter:brightness(3)}27%,100%{filter:none}}
+@keyframes hfl{0%{filter:none}62%{filter:brightness(3)}67%,100%{filter:none}}
+.fight.fx{animation:shake 2.8s steps(1,end)}
+@keyframes shake{0%{transform:none}22%{transform:translate(3px,-2px)}24%{transform:translate(-3px,2px)}26%{transform:translate(2px,0)}28%{transform:none}62%{transform:translate(-3px,-2px)}64%{transform:translate(3px,2px)}66%{transform:translate(-2px,0)}68%{transform:none}}
+.sp{opacity:0}
+.fx .sp1{animation:sp1 2.8s steps(1,end)}.fx .sp2{animation:sp2 2.8s steps(1,end)}
+@keyframes sp1{0%{opacity:0}22%{opacity:1}33%,100%{opacity:0}}
+@keyframes sp2{0%{opacity:0}62%{opacity:1}73%,100%{opacity:0}}
+.fx .sp1 polygon,.fx .sp1 text{animation:burst .45s cubic-bezier(.2,.9,.3,1) .616s both}
+.fx .sp2 polygon,.fx .sp2 text{animation:burst .45s cubic-bezier(.2,.9,.3,1) 1.736s both}
+.sp polygon,.sp text{transform-box:fill-box;transform-origin:center}
+@keyframes burst{from{transform:scale(.3)}}
+.sp text{font-family:"Press Start 2P",monospace;font-size:7px;text-anchor:middle}
+#hv,#rv{display:none}
+.win-h #ha,.win-r #ra,.win-h #hf,.win-r #rf,.win-h #hx,.win-r #rx{display:none}
+.win-h #hv,.win-r #rv{display:inline;animation:pump .4s steps(1,end) infinite}
+@keyframes pump{50%{transform:translateY(-3px)}}
+.win-h .hl .bob,.win-r .rl .bob{animation:jump .8s infinite}
+@keyframes jump{0%{transform:translateY(0);animation-timing-function:cubic-bezier(.2,.7,.4,1)}45%{transform:translateY(-8px);animation-timing-function:cubic-bezier(.6,0,.8,.4)}100%{transform:translateY(0)}}
+.win-h .rl .bob,.win-r .hl .bob{animation:slump .7s cubic-bezier(.2,.9,.3,1) both;filter:brightness(.55) saturate(.6)}
+@keyframes slump{to{transform:translateY(8px) rotate(-7deg)}}
+.wt,.bn{font-family:"Press Start 2P",monospace;text-anchor:middle}
+.wt{font-size:8px;fill:var(--ko);display:none}
+.win-h #wh,.win-r #wr{display:inline;animation:blink 0.5s steps(2) infinite}
+.bn{font-size:12px;fill:var(--ko);stroke:var(--p2);stroke-width:3px;paint-order:stroke;opacity:0;transform-box:fill-box;transform-origin:center}
+.bn.show{animation:bn .85s cubic-bezier(.2,.9,.3,1) both}
+@keyframes bn{0%{opacity:0;transform:scale(2.5)}18%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+
+.title{margin:0 0 12px;text-align:center;color:var(--ko);font-size:11px;line-height:1.4;text-wrap:balance;text-shadow:1.2px 1.2px 0 var(--p2),-1.2px -1.2px 0 var(--p1)}
+
+.stage{background:var(--bg);padding:0 0 4px;margin:0 0 12px}
+.cta{text-align:center}
+
+#start{font:inherit;font-size:11px;padding:10px 20px;background:var(--ko);color:#000;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--p2);cursor:pointer;animation:blink 1s steps(2) infinite;transition:transform 0.1s, box-shadow 0.1s, background-color 0.2s}
+#start:hover{background-color:#fff;box-shadow:4px 4px 0 var(--p1)}
+#start:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--p2)}
+#start:disabled{cursor:default;animation:none;opacity:.6}
+
+.round,.ko,.src{display:none}
+.round.on,.src.on{display:block;animation:pop .4s steps(4) both}
+.ko.on{display:block;animation:pop .4s steps(4) both,blink 1.2s steps(2) .5s infinite}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}}
+</style>
+</head>
+<body>
+<main>
+<h1 class="title">Le competenze e il lavoro dopo l'AI</h1>
+<div class="stage">
+<div class="vs">
+<div class="pl a">P1 Lavoratore umano</div>
+<div class="vsx">VS</div>
+<div class="pl b">P2 Intelligenza artificiale<small>Agenti AI e automazione</small></div>
+</div>
+
+<svg class="fight" viewBox="0 0 400 200" role="img" aria-label="Un uomo in giacca e cravatta combatte contro un robot" shape-rendering="crispEdges">
+<g id="stage"></g>
+<g transform="translate(86,36) scale(1.5)"><g class="hl"><g class="bob">
+<g id="hb"></g><g id="ha"></g><g id="hv"></g><g class="ext hx" id="hx"></g><g class="fist hf" id="hf"></g>
+</g></g></g>
+<g transform="translate(314,36) scale(-1.5,1.5)"><g class="rl"><g class="bob">
+<g id="rb"></g><g id="ra"></g><g id="rv"></g><g class="ext rx" id="rx"></g><g class="fist rf" id="rf"></g>
+</g></g></g>
+<g class="sp sp1" transform="translate(242,111) scale(1.5)"><polygon class="yl" points="0,-14 4,-5 13,-8 7,0 14,5 5,6 3,15 -2,7 -10,12 -6,3 -14,-3 -5,-4"/><text class="mg" x="-12" y="-22" fill="#ff2bd6">POW!</text></g>
+<g class="sp sp2" transform="translate(146,111) scale(1.5)"><polygon class="yl" points="0,-14 4,-5 13,-8 7,0 14,5 5,6 3,15 -2,7 -10,12 -6,3 -14,-3 -5,-4"/><text x="12" y="-24" fill="#00e5ff">BAM!</text></g>
+<text id="wh" class="wt" x="122" y="21">WINNER!</text><text id="wr" class="wt" x="278" y="21">WINNER!</text><text id="bn" class="bn" x="200" y="104"></text>
+</svg>
+<div class="cta"><button id="start" type="button">START</button></div>
+</div>
+
+<section class="round" data-win="h">
+<h2>Round 1: competenze</h2>
+<p class="sub">Su circa 3.900 abilità analizzate</p>
+<div class="bar"><i class="a" style="--w:87%"></i><i class="b" style="--w:13%"></i></div>
+<div class="nums"><span class="a">87%</span><span class="b">13%</span></div>
+<div class="txt">
+<div class="a"><b>Resta a guida umana o collaborativa.</b> 77% umano più IA, 10% solo umano.</div>
+<div class="b"><b>Guidato dall'algoritmo.</b> Lavoro interamente AI lead.</div>
+</div>
+</section>
+
+<section class="round" data-win="r">
+<h2>Round 2: ore di lavoro in Italia</h2>
+<p class="sub">Percentuale di ore automatizzabili</p>
+<div class="bar"><i class="a" style="--w:40%"></i><i class="b" style="--w:60%"></i></div>
+<div class="nums"><span class="a">40%</span><span class="b">60%</span></div>
+<div class="txt">
+<div class="a"><b>Non automatizzabile.</b> Ore a carico completamente umano.</div>
+<div class="b"><b>Potenziale d'automazione.</b> Ore che l'IA può prendere in carico.</div>
+</div>
+</section>
+
+<section class="round" data-win="r">
+<h2>Round 3: tipo di mansione</h2>
+<p class="sub">Percentuale di mansioni sostituibili</p>
+<div class="bar"><i class="a" style="--w:38%"></i><i class="b" style="--w:62%"></i></div>
+<div class="nums"><span class="a">38%</span><span class="b">62%</span></div>
+<div class="txt">
+<div class="a"><b>Fisiche e manuali.</b> Più protette: serve il contatto diretto.</div>
+<div class="b"><b>Cognitive e d'ufficio.</b> Più esposte a eventuale sostituzione/affiancamento.</div>
+</div>
+</section>
+
+<div class="ko">E TU SEI PRONTO?<br>NON FARTI METTERE <span style="white-space:nowrap">K.O.!</span></div>
+<div class="src">Fonte: McKinsey Global Institute, 2026<br>Di Diletti Davide</div>
+</main>
+<script>
+function R(id,a){var g=document.getElementById(id);a.forEach(function(s){var p=s.split(' '),r=document.createElementNS('http://www.w3.org/2000/svg','rect');
+r.setAttribute('class',p[0]);r.setAttribute('x',p[1]);r.setAttribute('y',p[2]);r.setAttribute('width',p[3]);r.setAttribute('height',p[4]);g.appendChild(r)})}
+R('stage',['bk 0 0 400 186','j2 0 80 400 60','m4 0 140 400 2','mg 0 142 400 2','m4 0 186 400 14','mg 0 192 400 1','mg 0 197 400 1','m5 0 0 400 6']);
+R('hb',['bk 4 94 18 6','bk 28 94 20 6','gy 40 94 6 2','pn 6 66 14 28','pn 28 66 14 28','bk 10 62 28 4','yl 22 62 4 4',
+'j1 8 28 32 34','j2 8 28 4 34','j3 36 28 4 34','w 20 30 8 26','rd 22 30 4 4','rd 22 34 4 16','rd 21 50 6 6','mg 34 34 4 3',
+'s2 20 24 8 4','w 18 26 4 4','w 26 26 4 4','s1 14 6 20 18','s2 14 20 20 4','hr 12 2 24 6','hr 12 6 4 10','w 24 12 4 4','bk 26 12 2 4','hr 24 9 8 2','rd 28 19 5 2',
+]);R('ha',['j1 6 34 8 14','j1 6 44 18 8','j2 6 44 18 2','s1 24 42 10 10','j1 32 34 8 10','j1 36 42 12 8']);R('hv',['j1 4 16 8 18','s1 4 10 8 6','j1 36 16 8 18','s1 36 10 8 6']);
+R('hx',['j1 48 42 26 8']);R('hf',['w 48 42 2 8','s1 50 40 12 12']);
+R('rb',['m5 4 94 22 6','m5 28 94 24 6','m3 10 78 14 16','m3 30 78 14 16','mg 12 90 10 3','mg 32 90 10 3','m3 14 72 28 6',
+'m2 8 38 40 34','m3 8 38 6 34','m1 44 38 4 34','m4 20 44 20 16','core 26 48 8 8','yl 28 50 4 4','m1 12 42 3 3','m1 12 66 3 3','m1 41 66 3 3',
+'mg 4 34 14 8','mg 38 34 14 8','m3 24 34 10 4','m1 14 12 30 22','m2 14 28 30 6','m3 10 18 4 10','m4 22 18 22 10','mg 32 21 10 4','m3 22 30 16 2','m3 28 6 3 6','mg 25 0 8 6',
+]);R('ra',['m3 4 42 8 14','m2 4 52 18 8','m1 22 50 10 10','m3 44 42 8 10','m2 52 50 8 8']);R('rv',['m3 4 18 8 20','m1 2 10 12 10','m3 44 18 8 20','m1 42 10 12 10']);
+R('rx',['m2 60 50 24 8']);R('rf',['mg 60 50 2 8','m1 62 48 12 12','mg 62 48 12 3']);
+var btn=document.getElementById('start'),svg=document.querySelector('.fight'),stage=document.querySelector('.stage'),bn=document.getElementById('bn');
+var rounds=[].slice.call(document.querySelectorAll('.round')),ko=document.querySelector('.ko'),src=document.querySelector('.src'),n=0;
+function re(el,c){el.classList.remove(c);void el.getBoundingClientRect();el.classList.add(c)}
+function say(t){bn.textContent=t;re(bn,'show')}
+function count(el){var to=parseInt(el.textContent,10),t0=performance.now();(function f(t){var k=Math.min(1,(t-t0)/1300);el.textContent=Math.round(to*k)+'%';if(k<1)requestAnimationFrame(f)})(t0)}
+
+function finale(){
+  stage.style.display='none';
+  document.body.classList.add('ended'); /* Abilita lo scorrimento del mouse alla fine */
+  rounds.forEach(function(x){x.classList.add('on','go');[].forEach.call(x.querySelectorAll('.nums span'),count)});
+  ko.classList.add('on');
+  src.classList.add('on');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function play(){
+var r=rounds[n];btn.disabled=true;btn.textContent='...';svg.classList.remove('win-h','win-r');
+say('ROUND '+(n+1));
+setTimeout(function(){say('FIGHT!')},850);
+setTimeout(function(){re(svg,'fx')},1700);
+setTimeout(function(){svg.classList.remove('fx');rounds.forEach(function(x){x.classList.remove('on','go')});r.classList.add('on','go');[].forEach.call(r.querySelectorAll('.nums span'),count)},4600);
+setTimeout(function(){svg.classList.add('win-'+r.getAttribute('data-win'))},5900);
+setTimeout(function(){n++;
+if(n<rounds.length){btn.textContent='ROUND '+(n+1);btn.disabled=false}
+else{setTimeout(finale,2000)}},7300);
+}
+btn.addEventListener('click',function(){if(n>=rounds.length){location.reload();return}play()});
+</script>
+</body>
+</html>
